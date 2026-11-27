@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch WebView2 SDK binaries (not committed)
+        shell: pwsh
+        run: ./get-webview2.ps1
+
+      - name: Build with .NET Framework csc
+        shell: pwsh
+        run: |
+          $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+          $fac = "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8\Facades\netstandard.dll"
+          if (!(Test-Path $csc)) { throw "csc.exe not found" }
+          if (!(Test-Path $fac)) { throw "netstandard facade not found: $fac" }
+          & $csc /nologo /codepage:65001 /target:winexe /out:拼图板.exe /win32icon:app.ico launcher.cs `
+            /r:System.dll /r:System.Core.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll `
+            /r:Microsoft.Web.WebView2.Core.dll /r:$fac
+          if ($LASTEXITCODE -ne 0) { throw "build failed" }
+
+      - name: Pack release
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item 拼图板.exe, index.html, app.ico, Microsoft.Web.WebView2.Core.dll, WebView2Loader.dll, `
+                    README.md, LICENSE, THIRD-PARTY-NOTICES.md, SECURITY.md, 诊断.bat dist
+          Get-ChildItem dist | Get-FileHash -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash)  $($_.Path | Split-Path -Leaf)" } | Set-Content dist/SHA256SUMS.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 拼图板-windows-x64
+          path: dist/
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**

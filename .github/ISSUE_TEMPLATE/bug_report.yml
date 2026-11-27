@@ -1,0 +1,75 @@
+name: Bug 报告
+description: 打不开、闪退、截图不对、导出异常…… 先在这里报
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **先看三件事，可能就不用报了：**
+        1. 双击 `诊断.bat`，它会用 `--diag` 跑一遍并把 `startup.log` 摊在记事本里；
+        2. 日志里如果有 `W3b … E_UNEXPECTED`，说明这台机器上 WebView2 起不来 → 用 `拼图板.exe --browser`；
+        3. 如果有“损坏的映像 0xc0000428”弹窗，那是程序在拦第三方注入 DLL（游戏加加之类），点确定即可。
+
+        排查顺序：`W0（STA/MTA）` → `W1/W2/W3` → `W: 回退…` → `FORM: 关闭 reason=` → `EXIT`。
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: exe 文件属性里的版本，或 Release 页的 tag / 文件名
+      placeholder: v1.0.0 / 拼图板.exe (2026-11-27)
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: 系统
+      description: Windows 版本 + 位数 + 是否开了显示缩放
+      placeholder: Windows 11 23H2 x64 / 150% 缩放
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 越具体越好，比如“双击 → 窗口出现 → 点第二行第三个格子 → 立刻消失”
+      placeholder: |
+        1. 双击 拼图板.exe
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望 vs 实际
+      placeholder: 期望……；实际……
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: startup.log（最后 20 行就够）
+      description: |
+        日志在 **exe 同目录** 或 `%TEMP%\HeroGridBoard-startup.log`。
+        ⚠️ 里面含本机路径，贴之前可以把 `C:\Users\你的名字` 之类替换成 `C:\Users\xxx`。
+      render: text
+      placeholder: |
+        14:51:30.646  B: DPI aware ok
+        14:51:30.874  W1: userData=...
+        14:51:30.880  W3b: 控制器创建失败 ... -> E_UNEXPECTED
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 其它
+      description: 装了游戏加加/加速器/杀软？有没有改过缩放、动过多屏？截图（注意遮住隐私）
+    validations:
+      required: false

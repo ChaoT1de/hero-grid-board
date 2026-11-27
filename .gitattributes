@@ -1,0 +1,7 @@
+* text=auto eol=lf
+# GBK 编码的批处理：原样保存，不做编码/换行转换
+*.bat -text
+*.ps1 text eol=crlf
+*.png binary
+*.ico binary
+*.exe binary

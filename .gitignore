@@ -1,0 +1,22 @@
+# ---------- 构建产物 ----------
+*.exe
+*.pdb
+_check.exe
+
+# ---------- 运行期数据（含本机路径，绝不能提交） ----------
+startup.log
+.webview/
+.profile/
+.webview-pending
+
+# ---------- 第三方二进制：用 get-webview2.ps1 获取，不纳入仓库 ----------
+Microsoft.Web.WebView2.Core.dll
+Microsoft.Web.WebView2.WinForms.dll
+WebView2Loader.dll
+
+# ---------- 编辑器 / 系统 ----------
+.vs/
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

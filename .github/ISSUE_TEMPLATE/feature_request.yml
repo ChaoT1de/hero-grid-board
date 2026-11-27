@@ -1,0 +1,37 @@
+name: 功能建议
+description: 想要的新能力 / 用起来别扭的地方
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 你想要什么
+      description: 一句话说清目标，再说你现在的绕法
+      placeholder: 希望截图后能自动裁掉窗口边框；现在我每次都要手动框小一点。
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: 为什么需要
+      description: 真实使用场景最有说服力
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及哪一块
+      multiple: true
+      options:
+        - 截图 / 热键
+        - 格子与排版
+        - 左栏文字与配色
+        - 多表（Sheet）
+        - 导出 / 存档
+        - 性能
+        - 其它
+    validations:
+      required: true

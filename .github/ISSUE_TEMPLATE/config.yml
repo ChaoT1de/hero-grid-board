@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 先看诊断日志
+    url: https://github.com/OWNER/REPO/blob/main/README.md#打不开--窗口没出现
+    about: 九成问题在 startup.log 里能直接看出来，先跑一次「诊断.bat」。
+  - name: 安全问题
+    url: https://github.com/OWNER/REPO/blob/main/SECURITY.md
+    about: 不要开公开 issue，按 SECURITY.md 里的方式私下联系。

@@ -1,0 +1,1810 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>评价表拼图板 · Hero Grid Board</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#151515">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="拼图板">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{
+  --cell:96px; --gap:6px; --labelW:250px;
+  --bg:#f4eee3; --boardBg:#151515; --cellBg:#1e1e1e;
+  --sel:#6ea8fe; --ok:#7ee0a1;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;display:flex;flex-direction:column;overflow:hidden;
+  font:13px/1.45 "Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  background:var(--bg);color:#20242a;
+}
+/* ---------------- toolbar ---------------- */
+#toolbar{
+  flex:0 0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:8px 12px;background:#fff;border-bottom:1px solid #e3dccd;
+  box-shadow:0 2px 6px rgba(0,0,0,.05);z-index:30;
+}
+.brand{font-weight:700;font-size:14px;color:#3a3a3a;margin-right:2px}
+button{
+  font:inherit;padding:5px 10px;border:1px solid #d8d0c0;background:#fdfbf6;
+  border-radius:6px;cursor:pointer;color:#333;white-space:nowrap;line-height:1.3;
+}
+button:hover{background:#f3ece0}
+button:active{transform:translateY(1px)}
+button.primary{background:#2f6fd0;border-color:#2f6fd0;color:#fff}
+button.primary:hover{background:#2a63ba}
+.sep{width:1px;height:20px;background:#e3dccd;margin:0 2px}
+.chk{display:flex;align-items:center;gap:4px;cursor:pointer;user-select:none;white-space:nowrap}
+.rng{display:flex;align-items:center;gap:6px;white-space:nowrap;color:#5a5a5a}
+.rng input[type=range]{width:92px;accent-color:#2f6fd0}
+.rng output{width:40px;text-align:right;color:#999;font-variant-numeric:tabular-nums}
+#numCols{width:52px;font:inherit;padding:4px 6px;border:1px solid #d8d0c0;border-radius:6px;background:#fdfbf6}
+/* ---------------- sheet bar ---------------- */
+#sheetBar{
+  flex:0 0 auto;display:flex;align-items:center;gap:4px;padding:4px 12px;
+  background:#f7f2e8;border-bottom:1px solid #e3dccd;overflow-x:auto;z-index:20;
+}
+#sheetTabs{display:flex;gap:4px;align-items:flex-end}
+.tab{
+  display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:6px 6px 0 0;
+  border:1px solid #ded4c2;border-bottom:none;background:#efe7d8;color:#6b6255;
+  cursor:pointer;font-size:12.5px;max-width:220px;user-select:none;
+}
+.tab.active{background:#fffdf8;color:#2b2b2b;font-weight:700;box-shadow:0 1px 0 #fffdf8}
+.tab .tabName{outline:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:28px;user-select:text}
+.tab .tabName:focus{background:#fff6d8;border-radius:3px;box-shadow:0 0 0 1px #e0c168}
+#btnNewSheet{padding:2px 9px;border-radius:6px;margin-bottom:1px}
+.sheetHint{color:#a49a88;font-size:11.5px;margin-left:6px;white-space:nowrap}
+/* ---------------- board ---------------- */
+#boardWrap{flex:1 1 auto;overflow:auto;padding:18px;}
+#board{
+  display:block;width:max-content;min-width:520px;
+  background:var(--boardBg);border-radius:8px;padding:12px 14px 14px;
+  box-shadow:0 10px 26px rgba(0,0,0,.18);
+}
+#boardTitle{
+  color:#e9e9e9;font-size:15px;font-weight:700;padding:2px 2px 10px;outline:none;
+  letter-spacing:.5px;
+}
+#boardTitle:focus{color:#fff;box-shadow:0 1px 0 var(--sel)}
+.row{display:flex;gap:var(--gap);margin-bottom:var(--gap);align-items:stretch}
+.labelWrap{position:relative;flex:0 0 var(--labelW);width:var(--labelW)}
+.label{
+  width:100%;min-height:var(--cell);padding:6px 8px;border-radius:2px;
+  background:#f2b0a8;color:#1b1b1b;font-size:var(--labelFont,15px);font-weight:var(--labelWeight,600);line-height:1.35;
+  outline:none;white-space:pre-wrap;word-break:break-word;overflow:hidden;
+  cursor:text;
+}
+.label:focus{box-shadow:0 0 0 2px var(--sel) inset}
+.rowTools{position:absolute;top:2px;right:2px;display:none;gap:2px}
+.row:hover .rowTools{display:flex}
+.rowTools button{
+  padding:1px 5px;font-size:11px;line-height:1.5;border-radius:4px;
+  background:rgba(0,0,0,.55);border:1px solid rgba(0,0,0,.4);color:#fff;
+}
+.rowTools button:hover{background:rgba(0,0,0,.8)}
+.cells{display:flex;gap:var(--gap);flex-wrap:nowrap}
+.cell{
+  position:relative;flex:0 0 var(--cell);width:var(--cell);height:var(--cell);
+  background:var(--cellBg);border:1px solid rgba(255,255,255,.06);border-radius:2px;
+  overflow:hidden;transition:border-color .12s,box-shadow .12s;
+}
+.cell.empty{border-style:dashed;border-color:rgba(255,255,255,.11)}
+.cell:hover{border-color:rgba(255,255,255,.42)}
+.cell.sel{
+  border-color:#58a6ff;
+  box-shadow:0 0 14px rgba(88,166,255,.6);
+  z-index:2;
+}
+/* 用伪元素画粗框，才能盖在图片上面（outline / box-shadow 会被 img 压住） */
+.cell.sel::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:3;
+  border:3px solid #58a6ff;border-radius:2px;
+  box-shadow:0 0 0 1px rgba(0,0,0,.5) inset;
+}
+.cell.drop{outline:2px solid var(--ok);outline-offset:-3px}
+.cell img{
+  width:100%;height:100%;display:block;object-fit:cover;
+  pointer-events:none;user-select:none;-webkit-user-drag:none;
+  transform-origin:center center;
+}
+.cell .grip{
+  position:absolute;left:2px;top:2px;width:15px;height:15px;border-radius:3px;
+  background:rgba(0,0,0,.55);color:#fff;font-size:10px;line-height:15px;text-align:center;
+  opacity:0;cursor:grab;user-select:none;transition:opacity .12s;
+}
+.cell:hover .grip{opacity:.9}
+#board.guides .cell{
+  background-image:
+    linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);
+  background-size:50% 50%;
+}
+#btnAddRowBottom{
+  display:block;width:100%;margin-top:2px;padding:9px 10px;
+  background:transparent;border:1px dashed rgba(255,255,255,.25);border-radius:4px;
+  color:#9a9a9a;font:inherit;font-size:13px;cursor:pointer;letter-spacing:1px;
+}
+#btnAddRowBottom:hover{background:rgba(126,224,161,.09);border-color:var(--ok);color:#c9f0d8}
+body.moving,body.moving *{cursor:grabbing !important}
+/* ---------------- floating ghosts ---------------- */
+#dragGhost,#pendingGhost{
+  position:fixed;left:0;top:0;width:76px;height:76px;z-index:900;
+  transform:translate(-50%,-50%);border-radius:5px;pointer-events:none;
+  background-size:cover;background-position:center;
+  box-shadow:0 8px 22px rgba(0,0,0,.4);border:2px solid var(--ok);
+}
+#pendingGhost{opacity:.92}
+.hidden{display:none !important}
+/* ---------------- crop overlay ---------------- */
+#cropOverlay{position:fixed;inset:0;z-index:1000;background:#000;cursor:crosshair}
+#cropFrame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
+#cropSel{position:absolute;border:1px solid var(--sel);box-shadow:0 0 0 9999px rgba(0,0,0,.45);pointer-events:none}
+#cropTip{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+  background:rgba(0,0,0,.72);color:#fff;padding:6px 14px;border-radius:16px;
+  font-size:12px;pointer-events:none;letter-spacing:.5px;
+}
+/* ---------------- context menu ---------------- */
+#ctxMenu{
+  position:fixed;z-index:950;min-width:150px;padding:4px;
+  background:#fff;border:1px solid #ddd5c6;border-radius:8px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+}
+#ctxMenu button{
+  display:block;width:100%;text-align:left;border:none;background:transparent;
+  padding:6px 10px;border-radius:5px;font-size:13px;
+}
+#ctxMenu button:hover{background:#f1ebdf}
+#ctxMenu .msep{height:1px;background:#eee6d8;margin:4px 2px}
+#ctxMenu .mcap{font-size:11.5px;color:#9a9183;padding:4px 8px 2px;letter-spacing:.5px}
+#ctxMenu .swatches{display:flex;flex-wrap:wrap;gap:4px;padding:4px 6px;max-width:170px}
+#ctxMenu .swatch{width:22px;height:22px;border-radius:4px;border:1px solid rgba(0,0,0,.15);padding:0;cursor:pointer}
+#colorDlg,#gradDlg{position:fixed;inset:0;z-index:1050;background:rgba(20,20,22,.45);display:flex;align-items:center;justify-content:center}
+.cd-card{width:330px;background:#fffdf8;border:1px solid #e6ddcc;border-radius:12px;padding:14px 16px;box-shadow:0 20px 50px rgba(0,0,0,.28);font-size:13px;color:#333}
+.cd-title{font-weight:700;font-size:14px;margin-bottom:10px}
+.cd-preview{height:46px;border-radius:6px;border:1px solid rgba(0,0,0,.12);margin-bottom:12px}
+.cd-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cd-row span{width:52px;color:#666}
+.cd-row input[type=color]{width:46px;height:26px;padding:0;border:1px solid #d8d0c0;border-radius:5px;background:#fff}
+.cd-row select{font:inherit;padding:3px 6px;border:1px solid #d8d0c0;border-radius:5px;background:#fff}
+.cd-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.cd-hint{font-size:12px;color:#8a8172;line-height:1.5;margin-bottom:10px}
+.cd-preview.tall{height:88px}
+
+/* ---------------- toast / help ---------------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,10px);
+  background:rgba(28,28,30,.92);color:#fff;padding:8px 16px;border-radius:18px;
+  font-size:13px;opacity:0;transition:opacity .18s,transform .18s;
+  pointer-events:none;z-index:1100;max-width:80vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#help{
+  position:fixed;right:16px;bottom:16px;z-index:800;width:340px;padding:12px 14px;
+  background:#fffdf8;border:1px solid #e6ddcc;border-radius:10px;
+  box-shadow:0 12px 30px rgba(0,0,0,.16);font-size:12.5px;line-height:1.6;color:#333;
+}
+#help b{display:block;margin-bottom:6px;font-size:13px}
+#help kbd{
+  background:#f0e9dc;border:1px solid #ded4c0;border-bottom-width:2px;border-radius:4px;
+  padding:0 4px;font-family:Consolas,monospace;font-size:11.5px;
+}
+/* ---------------- 触屏 / 移动端 ---------------- */
+body{touch-action:manipulation}
+.cell .grip{touch-action:none;-webkit-user-select:none;user-select:none}
+@media (pointer:coarse){
+  .cell .grip{width:26px;height:26px;line-height:26px;font-size:14px;opacity:.85;border-radius:5px}
+  .rowTools button{padding:4px 9px;font-size:13px}
+  .tab{padding:6px 12px;font-size:13px}
+  button{padding:7px 11px}
+}
+@media (max-width:760px){
+  .brand,.sheetHint{display:none}
+  #toolbar{gap:6px;padding:6px 8px}
+  #toolbar .rng input[type=range]{width:64px}
+  #boardWrap{padding:8px}
+  #help{left:8px;right:8px;width:auto}
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="brand">评价表拼图板</span>
+  <button id="btnCapture" class="primary" title="抓取屏幕并框选一块区域">📷 截图</button>
+  <button id="btnClipboard" title="读取剪贴板里的图片">📋 从剪贴板</button>
+  <button id="btnAlbum" title="从相册/文件选图（手机端主力入口）">🖼 相册</button>
+  <button id="btnFit" title="按窗口宽度缩放，手机上一键装下">⤢ 适配</button>
+  <span class="sep"></span>
+  <label class="chk"><input type="checkbox" id="chkAlign" checked> 自动对齐</label>
+  <label class="chk"><input type="checkbox" id="chkGuides" checked> 辅助线</label>
+  <label class="chk" title="窗口变窄时自动缩小表格（不放大，最小 35%）"><input type="checkbox" id="chkFit" checked> 随窗口</label>
+  <span class="sep"></span>
+  <label class="rng">缩放<input type="range" id="rngZoom" min="0.4" max="2" step="0.05" value="1"><output id="outZoom">100%</output></label>
+  <label class="rng">格子<input type="range" id="rngCell" min="48" max="180" step="4" value="96"><output id="outCell">96</output></label>
+  <label class="rng">列<input type="number" id="numCols" min="1" max="20" value="6"></label>
+  <button id="btnAddRow" title="在表格末尾加一行">＋ 新一行</button>
+  <span class="sep"></span>
+  <button id="btnUndo" title="Ctrl+Z">↶ 撤销</button>
+  <button id="btnSave" title="导出 .json 存档">💾 保存</button>
+  <button id="btnLoad">📂 读取</button>
+  <button id="btnExport" title="导出当前表为 PNG">🖼 导出 PNG</button>
+  <button id="btnHelp">?</button>
+</div>
+
+<div id="sheetBar">
+  <div id="sheetTabs"></div>
+  <button id="btnNewSheet" title="新建一张表">＋</button>
+  <span class="sheetHint">双击名字改名 · 右键更多（复制/删除/移动）</span>
+</div>
+
+<div id="boardWrap">
+  <div id="board">
+    <div id="boardTitle" contenteditable="true" spellcheck="false">对局评价表</div>
+    <div id="rowsHost"></div>
+    <button id="btnAddRowBottom" title="在表格末尾加一行">＋ 新一行</button>
+  </div>
+</div>
+
+<div id="cropOverlay" class="hidden">
+  <img id="cropFrame" alt="">
+  <div id="cropSel" class="hidden"></div>
+  <div id="cropTip">按住左键拖出要截的区域 · 松手完成 · Esc 取消</div>
+</div>
+
+<div id="pendingGhost" class="hidden"></div>
+<div id="ctxMenu" class="hidden"></div>
+<div id="colorDlg" class="hidden">
+  <div class="cd-card">
+    <div class="cd-title">行底色</div>
+    <div class="cd-preview" id="cdPrev"></div>
+    <div class="cd-row"><span>主色</span><input type="color" id="cdC1"></div>
+    <div class="cd-row"><label><input type="checkbox" id="cdGrad"> 用渐变（第二种颜色）</label></div>
+    <div class="cd-row" id="cdRow2"><span>终点色</span><input type="color" id="cdC2"></div>
+    <div class="cd-row" id="cdRow3"><span>方向</span>
+      <select id="cdAngle">
+        <option value="90">横向 →</option>
+        <option value="180">纵向 ↓</option>
+        <option value="0">纵向 ↑</option>
+        <option value="270">横向 ←</option>
+      </select>
+    </div>
+    <div class="cd-actions"><button id="cdCancel">取消</button><button id="cdOk" class="primary">应用</button></div>
+  </div>
+</div>
+
+<div id="gradDlg" class="hidden">
+  <div class="cd-card">
+    <div class="cd-title">整列渐变</div>
+    <div class="cd-hint">首行用「首行色」，末行用「末行色」，中间每一行自动插值——加减行也跟着重算。</div>
+    <div class="cd-preview tall" id="gdPrev"></div>
+    <div class="cd-row"><span>首行</span><input type="color" id="gdFrom"></div>
+    <div class="cd-row"><span>末行</span><input type="color" id="gdTo"></div>
+    <div class="cd-actions">
+      <button id="gdOff">关掉渐变</button>
+      <button id="gdCancel">取消</button>
+      <button id="gdOk" class="primary">应用</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="help" class="hidden">
+  <b>用法速查</b>
+  <div>① <b>截图</b>：点 📷 截图 → 选整个屏幕 → 框选 → 松手后图会<b>自动落在框选位置下方那一格</b>（没落在格上就跟着鼠标，点格子放下）。</div>
+  <div>①' 装了桌面版（exe 常驻托盘）时，直接按 <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>A</kbd> 全局框选，截完自动贴进<b>当前选中的格子</b>并跳到右一格，可以连续按。</div>
+  <div>② 也可以 <kbd>Win</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> 截完，点格子 <kbd>Ctrl</kbd>+<kbd>V</kbd>。</div>
+  <div>③ 拖图片文件到格子（多选连续填充）；拖动已有图片＝换格子（左上角 ⠿ 手柄随时可拖）。</div>
+  <div>④ 关掉「自动对齐」后可拖动微调、方向键 1px、滚轮缩放，松手自动吸附。</div>
+  <div>⑤ 下方标签页＝Sheet1/Sheet2，<kbd>Ctrl</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> 切换。</div>
+  <div>⑥ <kbd>Delete</kbd> 清空格，<kbd>Ctrl</kbd>+<kbd>Z</kbd> 撤销，<kbd>Esc</kbd> 取消待放图。</div>
+  <div>⑧ <b>右键左栏文字</b>：纯色盘 / 8 组预设渐变 / 自定义（两种颜色 + 方向）/ <b>整列渐变</b>（首行色→末行色，中间自动过渡，加减行会重算）。导出 PNG 同步。</div>
+  <div>⑦ 手机/平板：点 <b>🖼 相册</b> 多选图，点 <b>⤢ 适配</b> 一屏装下；移动图片请按住格子左上角 <b>⠿</b>。</div>
+  <div style="margin-top:6px;color:#888">点空白处关闭</div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple hidden>
+<input type="file" id="jsonInput" accept=".json,application/json" hidden>
+
+<script>
+(function(){
+'use strict';
+
+/* ================= helpers ================= */
+const el = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const GRADIENTS = [
+  ['#f28b82','#f5c780'],
+  ['#ff9a9e','#fecfef'],
+  ['#f6d365','#fda085'],
+  ['#a9e39b','#7ee0d3'],
+  ['#84fab0','#8fd3f4'],
+  ['#a18cd1','#fbc2eb'],
+  ['#cfd9df','#e2ebf0'],
+  ['#fbc2eb','#a6c1ee']
+];
+const PALETTE = ['#f28b82','#f6c780','#d8d8d8','#eef07a','#a9e39b','#c6ecb0','#a8e6ea','#b3b0f0','#f0a8c8','#ceb8f0'];
+const SEED_LABELS = ['可以划水，甚至偷吃小零食','拉克希尔仪式开始了，杀','我将密切观察学习他的运营/操作','我们的配合真是亲密无间！','无聊的对局，但说不出来为什么无聊','别捣乱别捣乱求求了！','我得坐起来跟他打！','花钱刷的吧'];
+const MEME_LABELS = ['夯','顶级','人上人','NPC','拉完了'];
+const LS_V2 = 'heroGridBoard.v2';
+const LS_V1 = 'heroGridBoard.v1';
+const blankCell = () => ({img:null, ox:0, oy:0, sc:1});
+
+let wb = null;            // workbook
+let sel = null;           // {r,c} in the active sheet
+let pending = null;       // dataURL waiting to be dropped
+let history = [];
+let saveTimer = null;
+let fileTarget = null;
+let suppressClick = false;
+
+const cur = () => wb.sheets[wb.active];
+const view = () => wb.view;
+
+function toast(msg, ms){
+  const t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), ms || 2000);
+}
+
+/* ================= model ================= */
+function rowsOf(labels, cols){
+  return labels.map((label,i)=>({
+    label,
+    color: PALETTE[i % PALETTE.length],
+    cells: Array.from({length:cols}, ()=>blankCell())
+  }));
+}
+
+function seedWorkbook(){
+  return {
+    v: 2,
+    active: 0,
+    view: {cellSize:96, gap:6, labelW:250, zoom:1, autoAlign:true, showGuides:true, autoFit:true},
+    sheets: [
+      {name:'Sheet1', title:'对局评价表', cols:6,
+       colorMode:'row', gradFrom:'#f28b82', gradTo:'#7ee0a1', labelFont:15, labelBold:true,
+       rows:rowsOf(SEED_LABELS, 6)}
+    ]
+  };
+}
+
+function blankSheet(name){
+  return {name: name || 'Sheet', title:'从夯到拉', cols:6,
+          colorMode:'row', gradFrom:'#f28b82', gradTo:'#7ee0a1', labelFont:15, labelBold:true,
+          rows:rowsOf(MEME_LABELS, 6)};
+}
+
+function normalizeCell(c){
+  let img = c && typeof c.img === 'string' && c.img ? c.img : null;
+  // 存档只认内嵌图片：防止被塞进外链（联网追踪）或奇怪协议
+  if(img && !/^data:image\/(png|jpe?g|webp|gif);base64,/i.test(img)) img = null;
+  return {
+    img: img,
+    ox: Number(c && c.ox) || 0,
+    oy: Number(c && c.oy) || 0,
+    sc: Number(c && c.sc) || 1
+  };
+}
+
+function normalizeSheet(s, i){
+  const cells0 = (Array.isArray(s && s.rows) ? s.rows : []);
+  return {
+    name: typeof s.name === 'string' && s.name.trim() ? s.name.trim() : ('Sheet' + (i + 1)),
+    title: typeof s.title === 'string' ? s.title : '评价表',
+    cols: clamp(parseInt(s.cols, 10) || 6, 1, 20),
+    colorMode: s.colorMode === 'colGrad' ? 'colGrad' : 'row',
+    labelFont: clamp(parseInt(s.labelFont, 10) || 15, 10, 32),
+    labelBold: s.labelBold !== false,
+    gradFrom: typeof s.gradFrom === 'string' && s.gradFrom ? s.gradFrom : '#f28b82',
+    gradTo: typeof s.gradTo === 'string' && s.gradTo ? s.gradTo : '#7ee0a1',
+    rows: (cells0.length ? cells0.slice(0, 200) : rowsOf(MEME_LABELS, 6)).map((r, ri)=>({
+      label: typeof r.label === 'string' ? r.label : '',
+      color: typeof r.color === 'string' && r.color ? r.color : PALETTE[ri % PALETTE.length],
+      color2: typeof r.color2 === 'string' && r.color2 ? r.color2 : null,
+      gradAngle: parseInt(r.gradAngle, 10) || 90,
+      cells: (Array.isArray(r.cells) && r.cells.length ? r.cells.slice(0, 50) : [blankCell()]).map(normalizeCell)
+    }))
+  };
+}
+
+/* v1 (单表) / v2 都能读 */
+function normalize(src){
+  const s = src && typeof src === 'object' ? src : {};
+  const base = seedWorkbook();
+
+  if(Array.isArray(s.sheets) && s.sheets.length){
+    const v = s.view || {};
+    const out = {
+      v: 2,
+      active: clamp(parseInt(s.active, 10) || 0, 0, s.sheets.length - 1),
+      view: {
+        cellSize: clamp(parseInt(v.cellSize, 10) || 96, 40, 200),
+        gap: clamp(parseInt(v.gap, 10) || 6, 0, 24),
+        labelW: clamp(parseInt(v.labelW, 10) || 250, 120, 640),
+        zoom: clamp(parseFloat(v.zoom) || 1, .3, 2.5),
+        autoAlign: v.autoAlign !== false,
+        showGuides: v.showGuides !== false,
+        autoFit: v.autoFit !== false
+      },
+      sheets: s.sheets.map(normalizeSheet)
+    };
+    return out;
+  }
+
+  if(Array.isArray(s.rows)){
+    const out = base;
+    out.view = {
+      cellSize: clamp(parseInt(s.cellSize, 10) || 96, 40, 200),
+      gap: clamp(parseInt(s.gap, 10) || 6, 0, 24),
+      labelW: clamp(parseInt(s.labelW, 10) || 250, 120, 640),
+      zoom: clamp(parseFloat(s.zoom) || 1, .3, 2.5),
+      autoAlign: s.autoAlign !== false,
+      showGuides: s.showGuides !== false,
+      autoFit: s.autoFit !== false
+    };
+    out.sheets = [normalizeSheet({name:'Sheet1', title:s.title, cols:s.cols, rows:s.rows}, 0)];
+    out.active = 0;
+    return out;
+  }
+  return base;
+}
+
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{ localStorage.setItem(LS_V2, JSON.stringify(wb)); }
+    catch(e){ toast('自动保存失败（容量超限），请用 💾 保存 导出存档', 3000); }
+  }, 900);
+}
+
+function snapshot(){
+  history.push(JSON.stringify(wb));
+  if(history.length > 60) history.shift();
+}
+
+function undo(){
+  const raw = history.pop();
+  if(!raw){ toast('没有可撤销的操作'); return; }
+  wb = normalize(JSON.parse(raw));
+  sel = null;
+  refreshAll(); save();
+}
+
+/* ================= render ================= */
+function refreshAll(){
+  el('boardTitle').textContent = cur().title;
+  renderSheetTabs();
+  render();
+  syncToolbar();
+}
+
+function renderSheetTabs(){
+  const host = el('sheetTabs');
+  host.innerHTML = '';
+  wb.sheets.forEach((s, i)=>{
+    const t = document.createElement('div');
+    t.className = 'tab' + (i === wb.active ? ' active' : '');
+    t.dataset.i = i;
+
+    const name = document.createElement('span');
+    name.className = 'tabName';
+    name.textContent = s.name;
+    name.contentEditable = 'true';
+    name.spellcheck = false;
+    name.addEventListener('input', ()=>{ s.name = name.textContent; save(); });
+    name.addEventListener('blur', ()=>{
+      const clean = (name.textContent || '').trim();
+      s.name = clean || ('Sheet' + (i + 1));
+      name.textContent = s.name;
+      save();
+    });
+    name.addEventListener('keydown', ev=>{
+      if(ev.key === 'Enter'){ ev.preventDefault(); name.blur(); }
+    });
+
+    t.appendChild(name);
+    t.addEventListener('click', ()=>{
+      if(wb.active !== i){ wb.active = i; sel = null; refreshAll(); save(); }
+    });
+    t.addEventListener('contextmenu', ev=>{
+      ev.preventDefault();
+      sheetMenu(ev.clientX, ev.clientY, i);
+    });
+    host.appendChild(t);
+  });
+}
+
+function render(){
+  const host = el('rowsHost');
+  host.innerHTML = '';
+
+  const board = el('board');
+  const v = view();
+  board.style.zoom = v.zoom;
+  board.classList.toggle('guides', !!v.showGuides);
+  document.documentElement.style.setProperty('--cell', v.cellSize + 'px');
+  document.documentElement.style.setProperty('--gap', v.gap + 'px');
+  document.documentElement.style.setProperty('--labelW', v.labelW + 'px');
+  const sh0 = cur();
+  document.documentElement.style.setProperty('--labelFont', (sh0.labelFont || 15) + 'px');
+  document.documentElement.style.setProperty('--labelWeight', sh0.labelBold === false ? '400' : '600');
+
+  const sh = cur();
+  if(sel && (!sh.rows[sel.r] || sel.c >= sh.rows[sel.r].cells.length)) sel = null;
+  sh.rows.forEach((row, ri)=> host.appendChild(buildRow(row, ri)));
+}
+
+function hexToRgb(h){
+  let x = String(h || '').replace('#','');
+  if(x.length === 3) x = x[0]+x[0]+x[1]+x[1]+x[2]+x[2];
+  return [parseInt(x.substr(0,2),16) || 0, parseInt(x.substr(2,2),16) || 0, parseInt(x.substr(4,2),16) || 0];
+}
+
+function mixColor(a, b, t){
+  const A = hexToRgb(a), B = hexToRgb(b);
+  const c = [0,1,2].map(i => Math.round(A[i] + (B[i] - A[i]) * t));
+  return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')';
+}
+
+/* 左栏第 ri 行该用什么底色：整列渐变 or 逐行设置 */
+function rowLabelBg(ri, row){
+  const sh = cur();
+  if(sh.colorMode === 'colGrad' && sh.rows.length > 1){
+    const t = ri / (sh.rows.length - 1);
+    return mixColor(sh.gradFrom, sh.gradTo, t);
+  }
+  return rowBg(row);
+}
+
+function rowBg(row){
+  return row.color2
+    ? 'linear-gradient(' + (row.gradAngle || 90) + 'deg,' + row.color + ',' + row.color2 + ')'
+    : row.color;
+}
+
+function buildRow(row, ri){
+  const rowEl = document.createElement('div');
+  rowEl.className = 'row';
+  rowEl.dataset.r = ri;
+
+  const lw = document.createElement('div');
+  lw.className = 'labelWrap';
+
+  const lab = document.createElement('div');
+  lab.className = 'label';
+  lab.contentEditable = 'true';
+  lab.spellcheck = false;
+  lab.textContent = row.label;
+  lab.style.background = rowLabelBg(ri, row);
+  lab.addEventListener('input', ()=>{ row.label = lab.textContent; save(); });
+  lab.addEventListener('contextmenu', ev=>{
+    ev.preventDefault();
+    const items = [
+      {caption:'文字：' + (cur().labelFont || 15) + 'px' + (cur().labelBold === false ? '' : ' 粗')},
+      {label:'字号 −1', action:()=>bumpLabelFont(-1)},
+      {label:'字号 +1', action:()=>bumpLabelFont(1)},
+      {label:(cur().labelBold === false ? '✓ 加粗（已关）' : '加粗（已开）'), action:()=>toggleLabelBold()},
+      '-',
+      {caption:'纯色'},
+      {swatches:true, colors:PALETTE},
+      {caption:'预设渐变'},
+      {swatches:true, colors:GRADIENTS},
+      {label:'自定义颜色 / 渐变…', action:()=>openColorDialog(row)},
+      '-',
+      {label:'整列渐变（首行→末行，自动过渡）…', action:()=>openGradDialog()},
+      '-',
+      {label:'在上方插入新行', action:()=>pushInsertRow(ri)},
+      {label:'复制本行', action:()=>rowAction('copy', ri)},
+      {label:'删除本行', action:()=>rowAction('del', ri)}
+    ];
+    showMenu(ev.clientX, ev.clientY, items, col=>{
+      snapshot();
+      cur().colorMode = 'row';
+      if(Array.isArray(col)){ row.color = col[0]; row.color2 = col[1]; row.gradAngle = row.gradAngle || 90; }
+      else { row.color = col; row.color2 = null; }
+      render(); save();
+    });
+  });
+
+  const tools = document.createElement('div');
+  tools.className = 'rowTools';
+  tools.innerHTML = '<button data-act="up" title="上移">↑</button>' +
+                    '<button data-act="down" title="下移">↓</button>' +
+                    '<button data-act="addCell" title="加一格">+</button>' +
+                    '<button data-act="delCell" title="减一格">−</button>' +
+                    '<button data-act="del" title="删除行">✕</button>';
+  tools.addEventListener('click', ev=>{
+    const b = ev.target.closest('button');
+    if(!b) return;
+    ev.stopPropagation();
+    rowAction(b.dataset.act, ri);
+  });
+  tools.addEventListener('pointerdown', ev=>ev.stopPropagation());
+
+  lw.append(lab, tools);
+
+  const cells = document.createElement('div');
+  cells.className = 'cells';
+  row.cells.forEach((cell, ci)=> cells.appendChild(buildCell(cell, ri, ci)));
+
+  rowEl.append(lw, cells);
+  return rowEl;
+}
+
+function buildCell(cell, ri, ci){
+  const v = view();
+  const d = document.createElement('div');
+  d.className = 'cell' + (cell.img ? '' : ' empty');
+  d.dataset.r = ri;
+  d.dataset.c = ci;
+  if(sel && sel.r === ri && sel.c === ci) d.classList.add('sel');
+
+  if(cell.img){
+    const img = document.createElement('img');
+    img.src = cell.img;
+    img.draggable = false;
+    img.alt = '';
+    img.style.transform = v.autoAlign ? 'none'
+      : 'translate(' + cell.ox + 'px,' + cell.oy + 'px) scale(' + cell.sc + ')';
+    d.appendChild(img);
+
+    const grip = document.createElement('div');
+    grip.className = 'grip';
+    grip.textContent = '⠿';
+    grip.title = '按住拖到别的格子';
+    grip.addEventListener('pointerdown', ev=>{
+      ev.preventDefault();
+      ev.stopPropagation();
+      try{ grip.setPointerCapture(ev.pointerId); }catch(e){}
+      beginMove(ev, ri, ci);
+    });
+    d.appendChild(grip);
+  }
+
+  d.addEventListener('pointerdown', ev=>onCellPointerDown(ev, ri, ci));
+  d.addEventListener('dblclick', ()=>onCellDblClick(ri, ci));
+  d.addEventListener('contextmenu', ev=>onCellContext(ev, ri, ci));
+  d.addEventListener('wheel', ev=>onCellWheel(ev, ri, ci), {passive:false});
+  d.addEventListener('dragover', ev=>{
+    if(ev.dataTransfer && ev.dataTransfer.types.indexOf('Files') >= 0){
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = 'copy';
+      d.classList.add('drop');
+    }
+  });
+  d.addEventListener('dragleave', ()=> d.classList.remove('drop'));
+  d.addEventListener('drop', ev=>onCellDrop(ev, ri, ci));
+  return d;
+}
+
+function cellEl(ri, ci){
+  return document.querySelector('.cell[data-r="' + ri + '"][data-c="' + ci + '"]');
+}
+
+function applyImgTransform(ri, ci){
+  const d = cellEl(ri, ci);
+  if(!d) return;
+  const img = d.querySelector('img');
+  if(!img) return;
+  const c = cur().rows[ri].cells[ci];
+  img.style.transform = view().autoAlign ? 'none'
+    : 'translate(' + c.ox + 'px,' + c.oy + 'px) scale(' + c.sc + ')';
+}
+
+/* 只重画一个格子（整表 render 在图上百张时会明显卡） */
+function refreshCell(r, c){
+  const sh = cur();
+  if(!sh.rows[r] || !sh.rows[r].cells[c]) return;
+  const old = cellEl(r, c);
+  if(!old) return;
+  old.replaceWith(buildCell(sh.rows[r].cells[c], r, c));
+}
+
+function markSelection(){
+  document.querySelectorAll('.cell.sel').forEach(d=>d.classList.remove('sel'));
+  if(!sel) return;
+  const d = cellEl(sel.r, sel.c);
+  if(d) d.classList.add('sel');
+}
+
+/* ================= cell interactions ================= */
+function onCellPointerDown(ev, ri, ci){
+  if(ev.button !== 0) return;
+  if(pending){ ev.preventDefault(); beginPlace(); return; }
+  if(ev.pointerType === 'touch') return;          // 触屏：拖动请用格子左上角的 ⠿ 手柄
+  const v = view();
+  const cell = cur().rows[ri].cells[ci];
+
+  if(!v.autoAlign && cell.img && !ev.altKey && !ev.ctrlKey && !ev.metaKey){
+    ev.preventDefault();
+    beginPan(ev, ri, ci);
+    return;
+  }
+  if(cell.img){ beginMove(ev, ri, ci); }
+}
+
+function beginPan(ev, ri, ci){
+  const cell = cur().rows[ri].cells[ci];
+  const sx = ev.clientX, sy = ev.clientY;
+  const ox0 = cell.ox, oy0 = cell.oy;
+  const z = view().zoom || 1;
+  const onMove = e=>{
+    cell.ox = ox0 + (e.clientX - sx) / z;
+    cell.oy = oy0 + (e.clientY - sy) / z;
+    applyImgTransform(ri, ci);
+  };
+  const onUp = ()=>{
+    cleanup();
+    snapCell(cell);
+    applyImgTransform(ri, ci);
+    save();
+  };
+  const cleanup = ()=>{
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', cleanup);
+  };
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', cleanup);
+}
+
+function snapCell(cell){
+  const half = Math.max(1, view().cellSize / 2);
+  const tol = 9;
+  const snapAxis = v=>{
+    if(Math.abs(v) < tol) return 0;
+    const k = Math.round(v / half);
+    if(Math.abs(v - k * half) < tol) return k * half;
+    return v;
+  };
+  cell.ox = snapAxis(cell.ox);
+  cell.oy = snapAxis(cell.oy);
+}
+
+function beginMove(ev, ri, ci){
+  const sx = ev.clientX, sy = ev.clientY;
+  const src = cur().rows[ri].cells[ci];
+  let ghost = null, active = false, lastTarget = null;
+
+  const onMove = e=>{
+    if(!active && Math.hypot(e.clientX - sx, e.clientY - sy) > 5){
+      active = true;
+      document.body.classList.add('moving');
+      ghost = document.createElement('div');
+      ghost.id = 'dragGhost';
+      ghost.style.backgroundImage = 'url(' + src.img + ')';
+      document.body.appendChild(ghost);
+    }
+    if(!active) return;
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top = e.clientY + 'px';
+    if(lastTarget) lastTarget.classList.remove('drop');
+    const t = cellAt(e.clientX, e.clientY);
+    lastTarget = t ? t.el : null;
+    if(lastTarget) lastTarget.classList.add('drop');
+  };
+
+  const onUp = e=>{
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', cancel);
+    document.body.classList.remove('moving');
+    if(ghost) ghost.remove();
+    if(lastTarget) lastTarget.classList.remove('drop');
+    if(!active) return;
+    const t = cellAt(e.clientX, e.clientY);
+    if(!t || (t.r === ri && t.c === ci)) return;
+    snapshot();
+    moveImage(ri, ci, t.r, t.c, e.ctrlKey || e.metaKey);
+    refreshCell(ri, ci); refreshCell(t.r, t.c); markSelection(); save();
+  };
+
+  const cancel = ()=>{
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', cancel);
+    document.body.classList.remove('moving');
+    if(ghost) ghost.remove();
+    if(lastTarget) lastTarget.classList.remove('drop');
+  };
+
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', cancel);
+}
+
+function cellAt(x, y){
+  const e = document.elementFromPoint(x, y);
+  const c = e && e.closest ? e.closest('.cell') : null;
+  if(!c) return null;
+  return {el:c, r:+c.dataset.r, c:+c.dataset.c};
+}
+
+function moveImage(r1, c1, r2, c2, copy){
+  const rows = cur().rows;
+  const a = rows[r1].cells[c1];
+  const b = rows[r2].cells[c2];
+  if(copy){
+    rows[r2].cells[c2] = {img:a.img, ox:a.ox, oy:a.oy, sc:a.sc};
+  }else{
+    rows[r1].cells[c1] = {img:b.img, ox:b.ox, oy:b.oy, sc:b.sc};
+    rows[r2].cells[c2] = {img:a.img, ox:a.ox, oy:a.oy, sc:a.sc};
+  }
+  sel = {r:r2, c:c2};
+}
+
+document.addEventListener('click', ev=>{
+  if(suppressClick){ suppressClick = false; return; }
+  const tgt = ev.target;
+  const cell = tgt.closest ? tgt.closest('.cell') : null;
+  if(cell && !(tgt.closest && tgt.closest('.rowTools'))) selectCell(+cell.dataset.r, +cell.dataset.c);
+  if(!(tgt.closest && tgt.closest('#ctxMenu'))) hideMenu();
+  if(!(tgt.closest && (tgt.closest('#help') || tgt.closest('#toolbar') || tgt.closest('#sheetBar'))))
+    el('help').classList.add('hidden');
+});
+
+function selectCell(r, c){
+  if(sel && sel.r === r && sel.c === c) return;
+  sel = {r, c};
+  document.querySelectorAll('.cell.sel').forEach(d=>d.classList.remove('sel'));
+  const d = cellEl(r, c);
+  if(d) d.classList.add('sel');
+}
+
+function onCellDblClick(ri, ci){
+  if(pending) return;
+  if(cur().rows[ri].cells[ci].img) return;
+  fileTarget = {r:ri, c:ci};
+  el('fileInput').value = '';
+  el('fileInput').click();
+}
+
+function onCellWheel(ev, ri, ci){
+  const cell = cur().rows[ri].cells[ci];
+  if(view().autoAlign || !cell.img) return;
+  ev.preventDefault();
+  cell.sc = clamp(cell.sc - ev.deltaY * 0.0015, 0.3, 4);
+  applyImgTransform(ri, ci);
+  save();
+}
+
+function onCellContext(ev, ri, ci){
+  ev.preventDefault();
+  const rows = cur().rows;
+  const cell = rows[ri].cells[ci];
+  const items = [];
+  if(cell.img){
+    items.push({label:'替换图片…', action:()=>{ fileTarget = {r:ri, c:ci}; el('fileInput').value=''; el('fileInput').click(); }});
+    items.push({label:'复制图片到待放', action:()=>setPending(cell.img)});
+    items.push({label:'重置位置与缩放', action:()=>{ snapshot(); cell.ox = 0; cell.oy = 0; cell.sc = 1; refreshCell(ri, ci); save(); }});
+    items.push('-');
+    items.push({label:'清空此格', action:()=>{ snapshot(); rows[ri].cells[ci] = blankCell(); refreshCell(ri, ci); save(); }});
+  }else{
+    items.push({label:'放入待放图', action:()=>{ if(pending) placePending(ri, ci, false); else toast('先截图或 Ctrl+V 准备一张图'); }, disabled:!pending});
+    items.push({label:'选择本地图片…', action:()=>{ fileTarget = {r:ri, c:ci}; el('fileInput').value=''; el('fileInput').click(); }});
+  }
+  items.push('-');
+  items.push({label:'在本行加一格', action:()=>rowAction('addCell', ri)});
+  items.push({label:'删除本行', action:()=>rowAction('del', ri)});
+  showMenu(ev.clientX, ev.clientY, items);
+}
+
+function onCellDrop(ev, ri, ci){
+  ev.preventDefault();
+  const d = cellEl(ri, ci);
+  if(d) d.classList.remove('drop');
+  const files = Array.from(ev.dataTransfer.files || []).filter(f=>f.type.startsWith('image/'));
+  if(!files.length) return;
+  fillFrom(ri, ci, files);
+}
+
+/* ================= pending image ================= */
+function setPending(dataURL){
+  pending = dataURL;
+  const g = el('pendingGhost');
+  g.style.backgroundImage = 'url(' + dataURL + ')';
+  g.classList.remove('hidden');
+}
+
+function clearPending(){
+  pending = null;
+  el('pendingGhost').classList.add('hidden');
+}
+
+function beginPlace(){
+  const onUp = ev=>{
+    document.removeEventListener('pointerup', onUp);
+    if(!pending) return;
+    const t = cellAt(ev.clientX, ev.clientY);
+    if(!t){ toast('要松手在格子上才会放下'); return; }
+    placePending(t.r, t.c, ev.shiftKey);
+  };
+  document.addEventListener('pointerup', onUp);
+}
+
+document.addEventListener('pointermove', ev=>{
+  if(!pending) return;
+  const g = el('pendingGhost');
+  g.style.left = ev.clientX + 'px';
+  g.style.top = ev.clientY + 'px';
+});
+
+function placePending(ri, ci, keep){
+  if(!pending) return;
+  snapshot();
+  const c = cur().rows[ri].cells[ci];
+  c.img = pending; c.ox = 0; c.oy = 0; c.sc = 1;
+  sel = {r:ri, c:ci};
+  refreshCell(ri, ci); markSelection(); save();
+  if(!keep){ clearPending(); toast('已放下'); }
+}
+
+async function fillFrom(ri, ci, files){
+  snapshot();
+  const sh = cur();
+  let r = ri, c = ci;
+  for(const f of files){
+    const url = await fileToImageURL(f);
+    if(!url) continue;
+    while(sh.rows[r] && c >= sh.rows[r].cells.length){ r++; c = 0; }
+    if(!sh.rows[r]){ toast('格子不够了，先加行'); break; }
+    const cell = sh.rows[r].cells[c];
+    cell.img = url; cell.ox = 0; cell.oy = 0; cell.sc = 1;
+    refreshCell(r, c);
+    c++;
+  }
+  save();
+}
+
+function fileToImageURL(file){
+  return new Promise(res=>{
+    const fr = new FileReader();
+    fr.onload = ()=> normalizeImage(fr.result).then(res);
+    fr.onerror = ()=> res(null);
+    fr.readAsDataURL(file);
+  });
+}
+
+function normalizeImage(src, max){
+  max = max || 512;
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{
+      const k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
+      const w = Math.max(1, Math.round(im.naturalWidth * k));
+      const h = Math.max(1, Math.round(im.naturalHeight * k));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(im, 0, 0, w, h);
+      let out = cv.toDataURL('image/webp', 0.92);
+      if(!out || out.indexOf('data:image/webp') !== 0) out = cv.toDataURL('image/png');
+      res(out);
+    };
+    im.onerror = ()=> res(src);
+    im.src = src;
+  });
+}
+
+/* ================= screenshot ================= */
+let cropCanvas = null, cropStart = null, cropURL = null;
+
+async function startCapture(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+    toast('此环境不支持内置框选：用 Win+Shift+S 截图，再 Ctrl+V 粘贴', 3500);
+    return;
+  }
+  let stream = null;
+  try{
+    stream = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30}, audio:false});
+  }catch(e){ return; }
+
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.srcObject = stream;
+  try{ await v.play(); }catch(e){}
+  await new Promise(r=>setTimeout(r, 240));
+
+  const w = v.videoWidth, h = v.videoHeight;
+  const cv = document.createElement('canvas');
+  cv.width = w || 1; cv.height = h || 1;
+  if(w && h) cv.getContext('2d').drawImage(v, 0, 0, w, h);
+  stream.getTracks().forEach(t=>t.stop());
+
+  if(!w || !h){ toast('没有抓到画面，重试一次'); return; }
+  cropCanvas = cv;
+  el('cropSel').classList.add('hidden');
+  el('cropOverlay').classList.remove('hidden');
+  if(cropURL){ try{ URL.revokeObjectURL(cropURL); }catch(e){} cropURL = null; }
+  if(cv.toBlob){
+    cv.toBlob(blob=>{
+      cropURL = URL.createObjectURL(blob);
+      el('cropFrame').src = cropURL;
+    }, 'image/png');
+  }else{
+    el('cropFrame').src = cv.toDataURL('image/png');
+  }
+}
+
+function frameMap(){
+  const nw = cropCanvas.width, nh = cropCanvas.height;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const sc = Math.min(vw / nw, vh / nh);
+  return {nw, nh, sc, offX:(vw - nw * sc) / 2, offY:(vh - nh * sc) / 2};
+}
+
+el('cropOverlay').addEventListener('pointerdown', ev=>{
+  if(ev.button !== 0) return;
+  cropStart = {x:ev.clientX, y:ev.clientY};
+  const s = el('cropSel');
+  s.classList.remove('hidden');
+  s.style.left = ev.clientX + 'px';
+  s.style.top = ev.clientY + 'px';
+  s.style.width = '0px';
+  s.style.height = '0px';
+});
+
+document.addEventListener('pointermove', ev=>{
+  if(!cropStart) return;
+  const s = el('cropSel');
+  s.style.left = Math.min(cropStart.x, ev.clientX) + 'px';
+  s.style.top = Math.min(cropStart.y, ev.clientY) + 'px';
+  s.style.width = Math.abs(ev.clientX - cropStart.x) + 'px';
+  s.style.height = Math.abs(ev.clientY - cropStart.y) + 'px';
+});
+
+document.addEventListener('pointerup', ev=>{
+  if(!cropStart) return;
+  const a = cropStart;
+  cropStart = null;
+  finishCrop(a, {x:ev.clientX, y:ev.clientY});
+});
+
+function finishCrop(a, b){
+  el('cropSel').classList.add('hidden');
+  const dw = Math.abs(b.x - a.x), dh = Math.abs(b.y - a.y);
+  if(dw < 6 || dh < 6){ el('cropOverlay').classList.add('hidden'); return; }
+  const m = frameMap();
+  const x1 = clamp((Math.min(a.x, b.x) - m.offX) / m.sc, 0, m.nw);
+  const y1 = clamp((Math.min(a.y, b.y) - m.offY) / m.sc, 0, m.nh);
+  const x2 = clamp((Math.max(a.x, b.x) - m.offX) / m.sc, 0, m.nw);
+  const y2 = clamp((Math.max(a.y, b.y) - m.offY) / m.sc, 0, m.nh);
+  const cw = Math.round(x2 - x1), ch = Math.round(y2 - y1);
+  el('cropOverlay').classList.add('hidden');
+  if(cw < 2 || ch < 2) return;
+
+  const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+
+  const cv = document.createElement('canvas');
+  cv.width = cw; cv.height = ch;
+  cv.getContext('2d').drawImage(cropCanvas, x1, y1, cw, ch, 0, 0, cw, ch);
+  normalizeImage(cv.toDataURL('image/png')).then(url=>{
+    const t = cellAt(cx, cy);          // 框选中心正好在某个格子上 → 直接落进去
+    if(t){
+      snapshot();
+      const cell = cur().rows[t.r].cells[t.c];
+      cell.img = url; cell.ox = 0; cell.oy = 0; cell.sc = 1;
+      sel = {r:t.r, c:t.c};
+      render(); save();
+      toast('已放进第 ' + (t.r + 1) + ' 行第 ' + (t.c + 1) + ' 格，按住 ⠿ 可拖去别的格子', 2800);
+    }else{
+      setPending(url);
+      toast('已截取 ' + cw + '×' + ch + '，点格子放下（Shift 连放）', 2600);
+    }
+  });
+}
+
+/* ================= rows / sheets ================= */
+function rowAction(act, ri){
+  const rows = cur().rows;
+  snapshot();
+  if(act === 'up' && ri > 0){ const t = rows[ri-1]; rows[ri-1] = rows[ri]; rows[ri] = t; }
+  else if(act === 'down' && ri < rows.length - 1){ const t = rows[ri+1]; rows[ri+1] = rows[ri]; rows[ri] = t; }
+  else if(act === 'addCell'){ rows[ri].cells.push(blankCell()); }
+  else if(act === 'delCell'){ if(rows[ri].cells.length > 1) rows[ri].cells.pop(); }
+  else if(act === 'del'){ if(rows.length > 1) rows.splice(ri, 1); }
+  else if(act === 'copy'){ rows.splice(ri + 1, 0, JSON.parse(JSON.stringify(rows[ri]))); }
+  render(); syncToolbar(); save();
+}
+
+function pushInsertRow(ri){
+  snapshot();
+  const rows = cur().rows;
+  const n = Math.max(1, ...rows.map(r=>r.cells.length));
+  rows.splice(ri, 0, {
+    label:'新的一行',
+    color: PALETTE[rows.length % PALETTE.length],
+    cells: Array.from({length:n}, ()=>blankCell())
+  });
+  render(); save();
+}
+
+function addRow(){
+  snapshot();
+  const sh = cur();
+  const n = Math.max(sh.cols || 6, ...sh.rows.map(r=>r.cells.length));
+  sh.rows.push({
+    label:'新的一行',
+    color: PALETTE[sh.rows.length % PALETTE.length],
+    cells: Array.from({length:n}, ()=>blankCell())
+  });
+  render(); syncToolbar(); save();
+  try{ const w = el('boardWrap'); w.scrollTop = w.scrollHeight; }catch(e){}
+}
+
+function addSheet(copyCurrent){
+  snapshot();
+  if(copyCurrent){
+    const clone = JSON.parse(JSON.stringify(cur()));
+    clone.name = nextSheetName();
+    wb.sheets.splice(wb.active + 1, 0, clone);
+    wb.active = wb.active + 1;
+  }else{
+    const sh = blankSheet(nextSheetName());
+    wb.sheets.splice(wb.active + 1, 0, sh);
+    wb.active = wb.active + 1;
+  }
+  sel = null;
+  refreshAll(); save();
+}
+
+function nextSheetName(){
+  let n = wb.sheets.length + 1;
+  const taken = new Set(wb.sheets.map(s=>s.name));
+  while(taken.has('Sheet' + n)) n++;
+  return 'Sheet' + n;
+}
+
+function sheetMenu(x, y, i){
+  showMenu(x, y, [
+    {label:'重命名（也可双击名字）', action:()=>{ const tab = el('sheetTabs').children[i]; const n = tab && tab.querySelector('.tabName'); if(n){ n.focus(); const r = document.createRange(); r.selectNodeContents(n); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } }},
+    {label:'复制这张表', action:()=>{ snapshot(); const clone = JSON.parse(JSON.stringify(wb.sheets[i])); clone.name = wb.sheets[i].name + ' 副本'; wb.sheets.splice(i + 1, 0, clone); wb.active = i + 1; sel = null; refreshAll(); save(); }},
+    {label:'新建空白表（从夯到拉模板）', action:()=>addSheet(false)},
+    '-',
+    {label:'左移', action:()=>moveSheet(i, -1)},
+    {label:'右移', action:()=>moveSheet(i, 1)},
+    '-',
+    {label:'清空这张表的所有图片', action:()=>{
+      snapshot();
+      wb.sheets[i].rows.forEach(r=> r.cells.forEach(c=>{ c.img = null; c.ox = 0; c.oy = 0; c.sc = 1; }));
+      render(); save(); toast('已清空图片，文字保留');
+    }},
+    {label:'删除这张表', action:()=>{
+      if(wb.sheets.length <= 1){ toast('至少要留一张表'); return; }
+      snapshot();
+      wb.sheets.splice(i, 1);
+      wb.active = clamp(wb.active > i ? wb.active - 1 : wb.active, 0, wb.sheets.length - 1);
+      sel = null;
+      refreshAll(); save();
+    }}
+  ]);
+}
+
+function moveSheet(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= wb.sheets.length) return;
+  snapshot();
+  const t = wb.sheets[i];
+  wb.sheets[i] = wb.sheets[j];
+  wb.sheets[j] = t;
+  wb.active = j;
+  refreshAll(); save();
+}
+
+/* ================= 左栏文字样式 ================= */
+function bumpLabelFont(d){
+  const sh = cur();
+  snapshot();
+  sh.labelFont = clamp((sh.labelFont || 15) + d, 10, 32);
+  render(); save();
+}
+
+function toggleLabelBold(){
+  const sh = cur();
+  snapshot();
+  sh.labelBold = (sh.labelBold === false);
+  render(); save();
+  toast(sh.labelBold ? '左栏已加粗' : '左栏已取消加粗');
+}
+
+/* ================= 行底色：自定义颜色 / 渐变 ================= */
+let colorRow = null;
+
+function toHex(c, fb){ return /^#[0-9a-fA-F]{6}$/.test(c || '') ? c : fb; }
+
+function openColorDialog(row){
+  colorRow = row;
+  el('cdC1').value = toHex(row.color, '#f28b82');
+  el('cdC2').value = toHex(row.color2, '#f5c780');
+  el('cdGrad').checked = !!row.color2;
+  el('cdAngle').value = String(row.gradAngle || 90);
+  syncColorPreview();
+  el('colorDlg').classList.remove('hidden');
+}
+
+function syncColorPreview(){
+  const g = el('cdGrad').checked;
+  el('cdRow2').style.display = g ? 'flex' : 'none';
+  el('cdRow3').style.display = g ? 'flex' : 'none';
+  el('cdPrev').style.background = g
+    ? 'linear-gradient(' + el('cdAngle').value + 'deg,' + el('cdC1').value + ',' + el('cdC2').value + ')'
+    : el('cdC1').value;
+}
+
+function bindColorDialog(){
+  const ids = ['cdC1','cdC2'];
+  for(let i = 0; i < ids.length; i++){
+    if(el(ids[i])) el(ids[i]).addEventListener('input', syncColorPreview);
+  }
+  el('cdGrad').addEventListener('change', syncColorPreview);
+  el('cdAngle').addEventListener('change', syncColorPreview);
+
+  el('cdCancel').addEventListener('click', ()=>{ el('colorDlg').classList.add('hidden'); colorRow = null; });
+  el('cdOk').addEventListener('click', ()=>{
+    if(colorRow){
+      snapshot();
+      colorRow.color = el('cdC1').value;
+      if(el('cdGrad').checked){
+        colorRow.color2 = el('cdC2').value;
+        colorRow.gradAngle = parseInt(el('cdAngle').value, 10) || 90;
+      } else {
+        colorRow.color2 = null;
+      }
+      render(); save();
+    }
+    el('colorDlg').classList.add('hidden');
+    colorRow = null;
+  });
+  el('colorDlg').addEventListener('pointerdown', ev=>{
+    if(ev.target === el('colorDlg')){ el('colorDlg').classList.add('hidden'); colorRow = null; }
+  });
+}
+
+let gradDlgOpen = false;
+
+function openGradDialog(){
+  const sh = cur();
+  el('gdFrom').value = sh.gradFrom || '#f28b82';
+  el('gdTo').value = sh.gradTo || '#7ee0a1';
+  gradDlgOpen = true;
+  syncGradPreview();
+  el('gradDlg').classList.remove('hidden');
+}
+
+function syncGradPreview(){
+  el('gdPrev').style.background = 'linear-gradient(180deg,' + el('gdFrom').value + ',' + el('gdTo').value + ')';
+}
+
+function bindGradDialog(){
+  el('gdFrom').addEventListener('input', syncGradPreview);
+  el('gdTo').addEventListener('input', syncGradPreview);
+  el('gdCancel').addEventListener('click', ()=>{ el('gradDlg').classList.add('hidden'); gradDlgOpen = false; });
+  el('gradDlg').addEventListener('pointerdown', ev=>{
+    if(ev.target === el('gradDlg')){ el('gradDlg').classList.add('hidden'); gradDlgOpen = false; }
+  });
+  el('gdOff').addEventListener('click', ()=>{
+    snapshot();
+    const sh = cur();
+    sh.colorMode = 'row';
+    // 把当前的渐变落到每一行上，颜色不至于突然全变回原样
+    sh.rows.forEach((r, i)=>{
+      if(sh.rows.length > 1){
+        const t = i / (sh.rows.length - 1);
+        const A = hexToRgb(sh.gradFrom), B = hexToRgb(sh.gradTo);
+        const c = [0,1,2].map(k => Math.round(A[k] + (B[k] - A[k]) * t));
+        r.color = '#' + c.map(v => ('0' + v.toString(16)).slice(-2)).join('');
+        r.color2 = null;
+      }
+    });
+    el('gradDlg').classList.add('hidden');
+    gradDlgOpen = false;
+    render(); save();
+    toast('已关掉整列渐变，当前颜色已固化到每一行');
+  });
+  el('gdOk').addEventListener('click', ()=>{
+    snapshot();
+    const sh = cur();
+    sh.colorMode = 'colGrad';
+    sh.gradFrom = el('gdFrom').value;
+    sh.gradTo = el('gdTo').value;
+    el('gradDlg').classList.add('hidden');
+    gradDlgOpen = false;
+    render(); save();
+  });
+}
+
+/* ================= context menu ================= */
+let menuColorHandler = null;
+
+function showMenu(x, y, items, onColor){
+  const menu = el('ctxMenu');
+  menu.innerHTML = '';
+  menuColorHandler = onColor || null;
+
+  items.forEach(it=>{
+    if(it === '-'){ const d = document.createElement('div'); d.className = 'msep'; menu.appendChild(d); return; }
+    if(it.caption){
+      const d = document.createElement('div');
+      d.className = 'mcap';
+      d.textContent = it.caption;
+      menu.appendChild(d);
+      return;
+    }
+    if(it.swatches){
+      const wrap = document.createElement('div');
+      wrap.className = 'swatches';
+      it.colors.forEach(col=>{
+        const b = document.createElement('button');
+        b.className = 'swatch';
+        if(Array.isArray(col)) b.style.background = 'linear-gradient(90deg,' + col[0] + ',' + col[1] + ')';
+        else b.style.background = col;
+        b.title = Array.isArray(col) ? '渐变' : col;
+        b.addEventListener('click', ()=>{ hideMenu(); if(menuColorHandler) menuColorHandler(col); });
+        wrap.appendChild(b);
+      });
+      menu.appendChild(wrap);
+      return;
+    }
+    if(it.hide) return;
+    const b = document.createElement('button');
+    b.textContent = it.label;
+    if(it.disabled) b.style.opacity = .45;
+    b.addEventListener('click', ()=>{ hideMenu(); if(it.action) it.action(); });
+    menu.appendChild(b);
+  });
+
+  menu.classList.remove('hidden');
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = Math.min(x, window.innerWidth - rect.width - 8) + 'px';
+  menu.style.top = Math.min(y, window.innerHeight - rect.height - 8) + 'px';
+}
+
+function hideMenu(){ el('ctxMenu').classList.add('hidden'); }
+
+document.addEventListener('pointerdown', ev=>{
+  if(!ev.target.closest || !ev.target.closest('#ctxMenu')) hideMenu();
+}, true);
+
+/* ================= toolbar ================= */
+/* 按窗口宽度自动缩放：只缩小不放大的（下限 35%），避免小窗时字看不清 */
+function fitWidth(silent){
+  const board = el('board'), wrap = el('boardWrap');
+  const prev = view().zoom;
+  board.style.zoom = 1;
+  const natural = board.offsetWidth || 600;
+  board.style.zoom = prev;
+  const avail = Math.max(200, wrap.clientWidth - 44);
+  const z = Math.round(clamp(avail / natural, 0.35, 1) * 100) / 100;
+  if(Math.abs(z - view().zoom) < 0.005 && silent) return;
+  view().zoom = z;
+  board.style.zoom = z;
+  el('rngZoom').value = z;
+  el('outZoom').value = Math.round(z * 100) + '%';
+  save();
+  if(!silent) toast('已适配窗口宽度：' + Math.round(z * 100) + '%');
+}
+
+let fitTimer = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(()=>{ if(view().autoFit) fitWidth(true); }, 180);
+});
+
+function syncToolbar(){  const v = view();
+  el('chkAlign').checked = !!v.autoAlign;
+  el('chkGuides').checked = !!v.showGuides;
+  el('chkFit').checked = v.autoFit !== false;
+  el('rngZoom').value = v.zoom;
+  el('outZoom').value = Math.round(v.zoom * 100) + '%';
+  el('rngCell').value = v.cellSize;
+  el('outCell').value = v.cellSize;
+  el('numCols').value = cur().cols;
+}
+
+function bindToolbar(){
+  el('btnCapture').addEventListener('click', startCapture);
+
+  el('btnClipboard').addEventListener('click', async ()=>{
+    try{
+      if(!navigator.clipboard || !navigator.clipboard.read) throw new Error('no api');
+      const items = await navigator.clipboard.read();
+      for(const it of items){
+        const type = it.types.find(t=>t.indexOf('image/') === 0);
+        if(type){
+          const blob = await it.getType(type);
+          const url = await fileToImageURL(blob);
+          if(url){ setPending(url); toast('已从剪贴板取图，点格子放下'); }
+          return;
+        }
+      }
+      toast('剪贴板里没有图片');
+    }catch(e){
+      toast('浏览器不允许读剪贴板：直接点格子按 Ctrl+V 即可');
+    }
+  });
+
+  el('btnAlbum').addEventListener('click', ()=>{
+    fileTarget = sel ? {r:sel.r, c:sel.c} : null;
+    el('fileInput').value = '';
+    el('fileInput').click();
+  });
+
+  el('btnFit').addEventListener('click', fitWidth);
+
+  el('chkAlign').addEventListener('change', ev=>{
+    view().autoAlign = ev.target.checked;
+    render(); save();
+    toast(view().autoAlign ? '自动对齐：图片居中铺满，拖动＝换格子' : '自由微调：拖动＝挪图片，⠿ 或 Alt+拖动＝换格子', 2600);
+  });
+
+  el('chkFit').addEventListener('change', ev=>{
+    view().autoFit = ev.target.checked;
+    save();
+    if(view().autoFit) fitWidth(true);
+  });
+
+  el('chkGuides').addEventListener('change', ev=>{
+    view().showGuides = ev.target.checked;
+    el('board').classList.toggle('guides', view().showGuides);
+    save();
+  });
+
+  el('rngZoom').addEventListener('input', ev=>{
+    view().zoom = parseFloat(ev.target.value);
+    el('board').style.zoom = view().zoom;
+    el('outZoom').value = Math.round(view().zoom * 100) + '%';
+    save();
+  });
+
+  el('rngCell').addEventListener('input', ev=>{
+    view().cellSize = parseInt(ev.target.value, 10);
+    document.documentElement.style.setProperty('--cell', view().cellSize + 'px');
+    el('outCell').value = view().cellSize;
+    save();
+  });
+
+  el('numCols').addEventListener('change', ev=>{
+    const n = clamp(parseInt(ev.target.value, 10) || 1, 1, 20);
+    const sh = cur();
+    snapshot();
+    sh.cols = n;
+    sh.rows.forEach(r=>{
+      while(r.cells.length < n) r.cells.push(blankCell());
+      while(r.cells.length > n) r.cells.pop();
+    });
+    render(); syncToolbar(); save();
+  });
+
+  el('btnAddRow').addEventListener('click', addRow);
+  el('btnAddRowBottom').addEventListener('click', addRow);
+  el('btnUndo').addEventListener('click', undo);
+  el('btnNewSheet').addEventListener('click', ()=>addSheet(false));
+
+  el('btnSave').addEventListener('click', ()=>{
+    const blob = new Blob([JSON.stringify(wb, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (cur().title || 'board') + '.json';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+  });
+
+  el('btnLoad').addEventListener('click', ()=>{ el('jsonInput').value = ''; el('jsonInput').click(); });
+  el('jsonInput').addEventListener('change', ev=>{
+    const f = ev.target.files && ev.target.files[0];
+    if(!f) return;
+    const fr = new FileReader();
+    fr.onload = ()=>{
+      try{
+        wb = normalize(JSON.parse(fr.result));
+        sel = null;
+        refreshAll(); save();
+        toast('已载入存档（' + wb.sheets.length + ' 张表）');
+      }catch(e){ toast('这个文件读不了'); }
+    };
+    fr.readAsText(f);
+  });
+
+  el('btnExport').addEventListener('click', exportPNG);
+  el('btnHelp').addEventListener('click', ()=>el('help').classList.toggle('hidden'));
+
+  el('fileInput').addEventListener('change', async ev=>{
+    const files = Array.from(ev.target.files || []);
+    if(!files.length) return;
+    const t = fileTarget || (sel ? {r:sel.r, c:sel.c} : null);
+    if(!t){ toast('先点一个格子'); return; }
+    await fillFrom(t.r, t.c, files);
+    fileTarget = null;
+  });
+
+  el('boardTitle').addEventListener('input', ()=>{
+    cur().title = el('boardTitle').textContent;
+    save();
+  });
+}
+
+/* ================= export PNG ================= */
+function loadImg(src){
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>res(im);
+    im.onerror = ()=>res(null);
+    im.src = src;
+  });
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH){
+  const chars = String(text || '').split('');
+  let line = '', ly = y;
+  for(let i = 0; i < chars.length; i++){
+    const test = line + chars[i];
+    if(ctx.measureText(test).width > maxW && line){
+      ctx.fillText(line, x, ly);
+      line = chars[i];
+      ly += lineH;
+    }else{
+      line = test;
+    }
+  }
+  if(line) ctx.fillText(line, x, ly);
+}
+
+async function exportPNG(){
+  const v = view();
+  const sh = cur();
+  const s = 2;
+  const gap = v.gap, cell = v.cellSize, labelW = v.labelW;
+  const rows = sh.rows;
+  const cols = Math.max(1, ...rows.map(r=>r.cells.length));
+  const titleH = 42;
+  const W = gap + labelW + gap + cols * (cell + gap);
+  const H = titleH + rows.length * (cell + gap) + gap;
+
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(W * s);
+  cv.height = Math.round(H * s);
+  const ctx = cv.getContext('2d');
+  ctx.scale(s, s);
+  ctx.fillStyle = '#151515';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#ececec';
+  ctx.font = 'bold 17px "Microsoft YaHei",sans-serif';
+  ctx.textBaseline = 'top';
+  ctx.fillText(sh.title || '', gap + 4, 14);
+
+  const imgs = [];
+  for(const r of rows){
+    const line = [];
+    for(const c of r.cells) line.push(c.img ? await loadImg(c.img) : null);
+    imgs.push(line);
+  }
+
+  rows.forEach((row, ri)=>{
+    const y = titleH + gap + ri * (cell + gap);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(gap, y, labelW, cell);
+    ctx.clip();
+    if(row.color2 && sh.colorMode !== 'colGrad'){
+      const rad = (row.gradAngle || 90) * Math.PI / 180;
+      const cx0 = gap + labelW / 2, cy0 = y + cell / 2;
+      const len = Math.abs(labelW * Math.sin(rad)) + Math.abs(cell * Math.cos(rad));
+      const g = ctx.createLinearGradient(cx0 - Math.sin(rad) * len / 2, cy0 + Math.cos(rad) * len / 2,
+                                        cx0 + Math.sin(rad) * len / 2, cy0 - Math.cos(rad) * len / 2);
+      g.addColorStop(0, row.color);
+      g.addColorStop(1, row.color2);
+      ctx.fillStyle = g;
+    }else{
+      ctx.fillStyle = (sh.colorMode === 'colGrad') ? rowLabelBg(ri, row) : row.color;
+    }
+    ctx.fillRect(gap, y, labelW, cell);
+    const lf = sh.labelFont || 15;
+    ctx.fillStyle = '#1b1b1b';
+    ctx.font = (sh.labelBold === false ? '' : '600 ') + lf + 'px "Microsoft YaHei",sans-serif';
+    wrapText(ctx, row.label, gap + 8, y + 8, labelW - 16, Math.round(lf * 1.36));
+    ctx.restore();
+
+    row.cells.forEach((c, ci)=>{
+      const cx = gap + labelW + gap + ci * (cell + gap);
+      ctx.fillStyle = '#1e1e1e';
+      ctx.fillRect(cx, y, cell, cell);
+      const im = imgs[ri][ci];
+      if(!im) return;
+      const k = Math.max(cell / im.naturalWidth, cell / im.naturalHeight) * (v.autoAlign ? 1 : c.sc);
+      const dw = im.naturalWidth * k, dh = im.naturalHeight * k;
+      const dx = cx + (cell - dw) / 2 + (v.autoAlign ? 0 : c.ox);
+      const dy = y + (cell - dh) / 2 + (v.autoAlign ? 0 : c.oy);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(cx, y, cell, cell);
+      ctx.clip();
+      ctx.drawImage(im, dx, dy, dw, dh);
+      ctx.restore();
+    });
+  });
+
+  const a = document.createElement('a');
+  a.href = cv.toDataURL('image/png');
+  a.download = (sh.title || 'board') + '.png';
+  a.click();
+  toast('已导出 PNG（2 倍分辨率）');
+}
+
+/* ================= keyboard / paste ================= */
+function isEditing(){
+  const a = document.activeElement;
+  return !!(a && (a.isContentEditable || a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'));
+}
+
+document.addEventListener('paste', async ev=>{
+  const items = Array.from((ev.clipboardData && ev.clipboardData.items) || []);
+  const imgItem = items.find(i=>i.type && i.type.indexOf('image/') === 0);
+  if(!imgItem) return;
+  const hasText = items.some(i=>i.type === 'text/plain');
+  if(isEditing() && hasText) return;        // 编辑文字且剪贴板同时有文字：交给浏览器
+  ev.preventDefault();
+  const file = imgItem.getAsFile();
+  if(!file) return;
+  const url = await fileToImageURL(file);
+  if(!url) return;
+  applyImage(url);
+});
+
+/* 把一张（已压缩的）图放进选中格；没有选中就变成待放图 */
+function applyImage(url){
+  if(sel){
+    snapshot();
+    const r0 = sel.r, c0 = sel.c;
+    const c = cur().rows[r0].cells[c0];
+    c.img = url; c.ox = 0; c.oy = 0; c.sc = 1;
+    // 连拍友好：放完自动跳到同一行右一格
+    if(c0 + 1 < cur().rows[r0].cells.length) sel = {r:r0, c:c0 + 1};
+    refreshCell(r0, c0); markSelection(); save();
+    toast('已放进第 ' + (r0 + 1) + ' 行第 ' + (c0 + 1) + ' 格' + (sel && sel.c === c0 + 1 ? '，下一格已选中' : ''));
+  }else{
+    setPending(url);
+    toast('已取到图片，点一个格子放下');
+  }
+}
+
+/* 内嵌窗口（WebView2）把截图直接推过来 */
+function receiveExternalImage(dataURL){
+  if(!dataURL || dataURL.indexOf('data:image/') !== 0) return;
+  normalizeImage(dataURL).then(url => { if(url) applyImage(url); });
+}
+
+
+/* 页面异常与首次点击都回报给宿主，写进 startup.log，方便定位“一点就崩” */
+if(window.chrome && window.chrome.webview && window.chrome.webview.postMessage){
+  window.addEventListener('error', ev=>{
+    try{ window.chrome.webview.postMessage('js-error: ' + (ev.message || '') + ' @' + (ev.filename || '') + ':' + (ev.lineno || 0)); }catch(e){}
+  });
+  window.addEventListener('unhandledrejection', ev=>{
+    try{ window.chrome.webview.postMessage('js-reject: ' + String(ev.reason)); }catch(e){}
+  });
+  let firstClickLogged = false;
+  document.addEventListener('pointerdown', ()=>{
+    if(firstClickLogged) return;
+    firstClickLogged = true;
+    try{ window.chrome.webview.postMessage('first-click'); }catch(e){}
+  }, true);
+}
+if(window.chrome && window.chrome.webview && window.chrome.webview.addEventListener){
+  window.chrome.webview.addEventListener('message', ev=>{
+    const d = ev && ev.data;
+    if(typeof d === 'string') receiveExternalImage(d);
+    else if(d && typeof d === 'object' && typeof d.image === 'string') receiveExternalImage(d.image);
+  });
+}
+
+document.addEventListener('keydown', ev=>{
+  const ctrl = ev.ctrlKey || ev.metaKey;
+
+  if(ctrl && ev.key.toLowerCase() === 'z' && !isEditing()){
+    ev.preventDefault(); undo(); return;
+  }
+
+  if(ctrl && (ev.key === 'PageDown' || ev.key === 'PageUp')){
+    ev.preventDefault();
+    const d = ev.key === 'PageDown' ? 1 : -1;
+    const n = wb.sheets.length;
+    wb.active = (wb.active + d + n) % n;
+    sel = null;
+    refreshAll(); save();
+    return;
+  }
+
+  if(ev.key === 'Escape'){
+    if(!el('gradDlg').classList.contains('hidden')){
+      el('gradDlg').classList.add('hidden');
+      gradDlgOpen = false;
+      return;
+    }
+    if(!el('colorDlg').classList.contains('hidden')){
+      el('colorDlg').classList.add('hidden');
+      colorRow = null;
+      return;
+    }
+    if(!el('cropOverlay').classList.contains('hidden')){
+      el('cropOverlay').classList.add('hidden');
+      el('cropSel').classList.add('hidden');
+      cropStart = null;
+      return;
+    }
+    if(pending){ clearPending(); toast('已取消待放图'); return; }
+    if(sel){ sel = null; document.querySelectorAll('.cell.sel').forEach(d=>d.classList.remove('sel')); }
+    hideMenu();
+    el('help').classList.add('hidden');
+    return;
+  }
+
+  if(isEditing()) return;
+
+  if((ev.key === 'Delete' || ev.key === 'Backspace') && sel){
+    ev.preventDefault();
+    snapshot();
+    cur().rows[sel.r].cells[sel.c] = blankCell();
+    refreshCell(sel.r, sel.c); save();
+    return;
+  }
+
+  if(sel && !view().autoAlign && ev.key.indexOf('Arrow') === 0){
+    ev.preventDefault();
+    const step = ev.shiftKey ? 5 : 1;
+    const c = cur().rows[sel.r].cells[sel.c];
+    if(ev.key === 'ArrowLeft') c.ox -= step;
+    if(ev.key === 'ArrowRight') c.ox += step;
+    if(ev.key === 'ArrowUp') c.oy -= step;
+    if(ev.key === 'ArrowDown') c.oy += step;
+    applyImgTransform(sel.r, sel.c);
+    save();
+  }
+});
+
+window.addEventListener('dragover', ev=>{ if(ev.dataTransfer && ev.dataTransfer.types.indexOf('Files') >= 0) ev.preventDefault(); });
+window.addEventListener('drop', ev=>{ if(ev.dataTransfer && ev.dataTransfer.types.indexOf('Files') >= 0) ev.preventDefault(); });
+
+/* ================= boot ================= */
+(function init(){
+  let raw = null, fromV1 = false;
+  try{ raw = localStorage.getItem(LS_V2); }catch(e){}
+  if(!raw){
+    try{ raw = localStorage.getItem(LS_V1); fromV1 = !!raw; }catch(e){}
+  }
+  if(raw){
+    try{ wb = normalize(JSON.parse(raw)); }catch(e){ wb = null; }
+  }
+  if(!wb) wb = seedWorkbook();
+
+  bindToolbar();
+  bindColorDialog();
+  bindGradDialog();
+  refreshAll();
+  if(view().autoFit) setTimeout(()=>fitWidth(true), 60);
+
+  if(fromV1) toast('已把旧版单表数据升级为 Sheet1');
+  else if(!raw && window.chrome && window.chrome.webview)
+    toast('这是独立窗口版。若之前在浏览器窗口里存过表：先去那边 💾 保存，再在这里 📂 读取', 6000);
+  else if(!raw) toast('点 📷 截图框一块，松手就落进对应的格子；Shift 连放', 4200);
+
+  if('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+})();
+
+})();
+</script>
+</body>
+</html>

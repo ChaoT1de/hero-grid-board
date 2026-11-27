@@ -97,4 +97,4 @@ build-exe.bat                                               # 编译
 
 ---
 
-大肥鱼 · 2026
+<img src="docs/dsh.png" width="26" align="absmiddle"> **大肥鱼 · 2026**　用 DSH（DeepSeek Harness）敲出来的。

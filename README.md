@@ -6,6 +6,7 @@
 
 [![build](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml/badge.svg)](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
+![大肥鱼](docs/dafiyu.png)
 
 <!-- 录好演示后取消注释，把 docs/demo.gif 一起提交
 ![demo](docs/demo.gif)
@@ -94,3 +95,7 @@ build-exe.bat                                               # 编译
 - 报 bug 请带上 `startup.log` 最后 20 行。
 - 安全问题按 [SECURITY.md](SECURITY.md) 私下说，别开公开 issue。
 - 许可 [MIT](LICENSE)，第三方组件见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+
+---
+
+大肥鱼 · 2026

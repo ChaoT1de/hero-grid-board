@@ -41,8 +41,9 @@ build-exe.bat
 
 - 一个 PR 只做一件事；顺手改的格式问题单独提。
 - 改了 `launcher.cs` 请在 PR 里说明，重点确认：`[STAThread]`、`DllImport` 签名、`--serve` 的路径校验没被绕过。
-- 新功能请同步更新 `README.md` 的「启动参数」或「几个容易误会的地方」。
+- 新功能请同步更新 `README.md` 的「命令行参数」或「注意事项」。
 - 日志一律走 `Log()`，不要 `Console.WriteLine`（winexe 没有控制台）。
+- **编码**：`.ps1` 必须带 UTF-8 BOM（PowerShell 5.1 会按 ANSI 解码中文，报假语法错）；含中文的 `.bat` 存成 GBK + CRLF 并在开头 `chcp 936`。`.gitattributes` 已经把这两类文件排除在换行转换之外。
 
 ## 提 issue 前
 

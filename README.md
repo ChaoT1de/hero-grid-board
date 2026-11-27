@@ -2,123 +2,99 @@
 
 ![banner](docs/banner.png)
 
-按一下 `Ctrl+Alt+A` 框一块屏，图片**直接落进对应格子**的排行榜 / 评价表工具。
-Windows 桌面程序，一个窗口一个 exe，**不联网**，排完一键导出 PNG。
+按 `Ctrl+Alt+A` 框一块屏，图片直接进格子。做「从夯到拉」这类排行榜用的，Windows 桌面程序，不联网。
 
 [![build](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml/badge.svg)](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml)
-![platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6)
 ![license](https://img.shields.io/badge/license-MIT-green)
 
-<!-- 演示：录好后取消注释，把 docs/demo.gif 一起提交
+<!-- 录好演示后取消注释，把 docs/demo.gif 一起提交
 ![demo](docs/demo.gif)
 -->
 
----
+## 这是什么
 
-## 它解决什么
+做排行图的素材大多来自视频和游戏里的截图。现成的 tier list 工具都要先把图存成文件再上传，左边的档位也基本只能写两三个字。
 
-做「从夯到拉」这类排行榜的人，素材通常来自**视频/游戏画面里的截图**。现成工具（TierMaker、哈基榜、各种 tier list 生成器）都要求你先把图片存成文件再上传，左边档位也只能写两三个字。
+这个工具把这段流程缩成三个动作：按热键、框一块屏、图进格子。左栏能写整句话，行和格子随时加减，排完直接导出 PNG。
 
-这个工具补的就是这条缝：
+## 怎么用
 
-| | 现成的 tier list 工具 | 这个 |
-| --- | --- | --- |
-| 取图 | 先截图存盘 → 上传 | **按热键框选，直接落进格子** |
-| 左栏 | 短档位名（S/A/B…） | 一整句锐评，可换行、可调字号、可加粗 |
-| 行列 | 模板固定 | 行、列、每行格数都能随时加减 |
-| 对齐 | 整行左对齐堆图 | 严格网格 + 可关的自动对齐吸附 |
-| 配色 | 固定几套 | 逐行纯色 / 预设渐变 / 自定义 / **整列渐变**（首行色→末行色自动插值） |
-| 多表 | 一般只有一张 | Excel 式 Sheet1/Sheet2… |
+到 [Releases](https://github.com/ChaoT1de/hero-grid-board/releases) 下 zip，解压，双击 `拼图板.exe`。右下角托盘会出现图标。
 
-## 功能
+1. 先把左栏的文字改成你要的档位；
+2. 点一下第一格的格子；
+3. 连续按 `Ctrl+Alt+A`，每截一张就自动落到当前格，然后跳到右边一格；
+4. 排完点「导出 PNG」。
 
-- **全局热键框选**：`Ctrl+Alt+A` → 全屏变暗框选 → 松手即落格，并自动跳到右一格，可连续按
-- **其它取图方式**：窗口内截图、`Ctrl+V`、拖图片文件（多选连填）、从相册/文件夹导入
-- **网格**：加减行、每行独立加减格、左栏文字直接编辑、行底色右键可换
-- **配色**：10 色盘 / 8 组预设渐变 / 自定义两色＋方向 / 整列渐变
-- **多表**：Sheet 标签栏，双击改名、右键复制删除、`Ctrl+PgUp/PgDn` 切换
-- **导出**：整表 PNG（2 倍分辨率，含渐变）、JSON 存档（可手改、可批量生成）
-- **自动保存**：关掉再开还在；换机器把整个文件夹拷走即可（便携）
-
-## 快速开始
-
-1. 到 [Releases](https://github.com/ChaoT1de/hero-grid-board/releases) 下载 zip，解压到任意目录；
-2. 双击 **`拼图板.exe`**（右下角托盘会出现图标）；
-3. 任何软件里按 `Ctrl+Alt+A`，框一块屏，松手。
-
-**系统要求**：Windows 10/11 x64，装了 WebView2 运行时（Win10/11 装过 Edge 的机器基本都有）。
-没有的话会自动退回「Chrome/Edge 应用窗口」模式，功能一样。
-
-### 从源码构建
-
-```powershell
-powershell -ExecutionPolicy Bypass -File get-webview2.ps1   # 拉 WebView2 SDK（仓库不放二进制）
-build-exe.bat                                               # 用系统自带 csc.exe 编译
-```
-
----
-
-## 用法
-
-**三步**：先把左栏的档位文字改好 → 选中第一格 → 连续按 `Ctrl+Alt+A` 截图，图会依次填进去。
+图片也可以用别的方式进：窗口里的 `📷 截图`、`Ctrl+V` 粘贴、从资源管理器拖文件进来（多选会依次填）。
 
 ### 键鼠
 
-| 操作 | 方式 |
+| 做什么 | 怎么做 |
 | --- | --- |
 | 全局框选 | `Ctrl+Alt+A` |
-| 粘贴剪贴板图片到选中格 | `Ctrl+V` |
-| 拖动换格子 | 拖图，或按住格子左上角 `⠿`（`Ctrl` 拖＝复制） |
-| 微调图片位置 | 关掉「自动对齐」后拖动，方向键 1px，滚轮缩放，松手吸附 |
-| 撤销 / 清空格 / 取消 | `Ctrl+Z` / `Delete` / `Esc` |
-| 切换表 | `Ctrl+PgUp` / `Ctrl+PgDn` |
-| 加行 | 表格底部 `＋ 新一行`，或工具栏同名按钮 |
-| 加/减一格 | 行悬停右上角 `+` / `−` |
+| 粘贴图片到选中的格子 | `Ctrl+V` |
+| 换格子 | 拖图，或按住格子左上角的 `⠿`（按住 `Ctrl` 拖是复制） |
+| 微调图片位置 | 关掉「自动对齐」后拖动，方向键挪 1px，滚轮缩放，松手会吸附 |
+| 撤销 / 清空当前格 / 取消 | `Ctrl+Z` / `Delete` / `Esc` |
+| 切换表 | `Ctrl+PgUp`、`Ctrl+PgDn` |
+| 加一行 | 表格底部「＋ 新一行」 |
+| 给某行加一格 | 鼠标移到行上，右上角的 `+` |
 
-### 命令行参数
+### 启动参数
 
 | 参数 | 作用 |
 | --- | --- |
-| （无） | 独立窗口 + 托盘 + `Ctrl+Alt+A` |
-| `--browser` | 强制用 Chrome/Edge 应用窗口（内核出问题时的对照） |
-| `--no-tray` | 不常驻托盘（也就没有全局热键） |
-| `--serve` | 额外开局域网只读服务，手机/平板同 Wi-Fi 可看 |
-| `--diag` | 分阶段写 `startup.log` 后自动退出（排障用） |
+| 无 | 独立窗口 + 托盘 + 全局热键 |
+| `--browser` | 用 Chrome/Edge 的应用窗口打开，内核出问题时的对照 |
+| `--no-tray` | 不常驻托盘，也就没有全局热键 |
+| `--serve` | 顺便在本机开个只读服务，同一 Wi-Fi 的手机可以打开看 |
+| `--diag` | 跑一遍并把过程写进 startup.log，然后自动退出 |
 
----
+## 和别的工具比
+
+- **取图**：那边是先截图存盘再上传，这边按一次热键就进格子了。
+- **左栏**：别家是 S/A/B 这种短标签；这里能写一整句，字号 10–32px 可调，也能加粗。
+- **行列**：不用套模板，行数和每行的格子数随时改。
+- **配色**：除了逐行选色和渐变，还能设「首行一个色、末行一个色」，中间自动过渡；加行删行会重新算，不用手动调。
+- **多表**：底下像 Excel 一样有 Sheet，可以一张放角色、一张放皮肤。
 
 ## 注意事项
 
-1. **数据在哪**：程序目录下的 `.webview` 文件夹（便携）。整个文件夹拷走就搬家；本地 `JSON 存档` 是另一条备份路。
-2. **关窗口＝退出**（托盘图标一起消失）；想让它待命就**最小化**，此时热键仍然可用。
-3. **托盘图标可能被折叠**：Windows 11 默认把新图标塞进任务栏的 `^` 区域，点开拖出来即可常驻。
-4. **会弹「损坏的映像 0xc0000428」？** 那是程序在拒收第三方注入 DLL（游戏加加 / 加速器的游戏内覆盖层，实测它会把本程序带崩）。点「确定」即可，不影响使用；嫌烦可以用 `--harden=ext` 启动，或在游戏加加里关掉「游戏内覆盖」。
-5. **未签名的 exe**：首次运行可能被 SmartScreen 提示「未知发布者」。可以核对 Release 里的 `SHA256SUMS.txt`，或者直接按上面的步骤自行构建。
-6. **隐私**：全程不联网。截图只在本机内存里流转，不落盘、不上传。唯一的网络行为是你手动加 `--serve` 后，本机开一个只读静态服务给同一局域网的设备看。
-7. **图片会被压缩**：入库时统一缩到长边 512px 的 WebP，保证上百张图也不卡；需要更高清可以改 `index.html` 里的 `normalizeImage(src, max)`。
-8. **手机端暂不支持**：规则和取舍写在 [docs/手机端方案.md](docs/手机端方案.md)，PWA 那套文件还留在仓库里。
+- 数据存在程序目录的 `.webview` 里。换电脑把整个文件夹拷走就行；也可以用「保存」导出一份 json 备份。
+- 关掉窗口就是退出。想让它一直待命（热键还能用），最小化就好。
+- Win11 默认把新的托盘图标塞进任务栏的 `^` 里，拖出来固定一下，不然会以为没启动。
+- 如果弹出「损坏的映像 0xc0000428」：那是程序在拦游戏加加、加速器这类覆盖层 DLL，实测它会把这个程序带崩。点确定继续用没问题；嫌烦可以 `--harden=ext` 启动，或者在游戏加加里关掉「游戏内覆盖」。
+- exe 没做代码签名，第一次运行 Windows 可能提示「未知发布者」。可以自己对一下 Release 里的 `SHA256SUMS.txt`，或者按下面的方法编译。
+- 全程不联网。截图只在本机内存里过一遍，不写磁盘也不上传。只有你手动加 `--serve` 时，才会在本机开一个只读的静态服务。
+- 图片入库时会缩到长边 512px（WebP），放上百张也不卡。想要更清晰就改 `index.html` 里的 `normalizeImage`。
+- 手机端还没做，思路记在 [docs/手机端方案.md](docs/手机端方案.md)。
 
-## 出问题了先看这里
+## 出问题
 
-双击 **`诊断.bat`**：它用 `--diag` 跑一遍，并把 `startup.log` 摊在记事本里。
+双击 `诊断.bat`。它会用 `--diag` 跑一遍，然后把 `startup.log` 用记事本摊开。
 
-| 日志里看到 | 意思 |
-| --- | --- |
-| `W0: apartment=MTA` | 主线程套间错了（`[STAThread]` 被弄丢），内核必失败 |
-| `W3b … E_UNEXPECTED` | WebView2 起不来（多半是另一个实例占着 `.webview`） |
-| `W8: 渲染进程失败` | 内核崩了，不是页面逻辑问题 |
-| 有 `W…` 却没有 `FORM:`/`EXIT:` | 进程被原生崩溃带走，去事件查看器看 Application Error |
-| 有 `JS: first-click` 之后没了 | 问题在页面/渲染器，不在宿主 |
+日志里这几行比较能说明问题：
 
-更多排查写在 [CONTRIBUTING.md](CONTRIBUTING.md)。
+- `W0: apartment=MTA`：主线程套间不对，内核必然起不来。
+- `W3b ... E_UNEXPECTED`：WebView2 没起来，通常是另一个实例还占着 `.webview`。
+- 有 `W` 开头的行，但没有 `FORM:` / `EXIT:`：进程是被系统直接带走的，去事件查看器看「应用程序错误」。
+- `JS: first-click` 之后没下文：问题在页面里，不在宿主。
 
-## 参与
+## 自己编译
 
-- 想改代码：看 [CONTRIBUTING.md](CONTRIBUTING.md)（代码地图、`[STAThread]` 和 `--serve` 校验这些别踩的地方）
-- 报 bug：用 issue 模板，附 `startup.log` 最后 20 行
-- 安全相关：不要开公开 issue，按 [SECURITY.md](SECURITY.md) 私下联系
+需要 Windows 10/11 x64 和系统自带的 .NET Framework 4.8（`csc.exe`）：
 
-## 许可
+```powershell
+powershell -ExecutionPolicy Bypass -File get-webview2.ps1   # 拉 WebView2 的两个 DLL
+build-exe.bat                                               # 编译
+```
 
-[MIT](LICENSE)。第三方组件（WebView2 等）见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)。
-版本变化见 [CHANGELOG.md](CHANGELOG.md)。
+改页面不用重编，窗口里按 F5 就重新加载。
+
+## 其它
+
+- 改代码之前看一眼 [CONTRIBUTING.md](CONTRIBUTING.md)，里面有几个容易踩的坑（`[STAThread]`、`--serve` 的路径校验）。
+- 报 bug 请带上 `startup.log` 最后 20 行。
+- 安全问题按 [SECURITY.md](SECURITY.md) 私下说，别开公开 issue。
+- 许可 [MIT](LICENSE)，第三方组件见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)，版本变化见 [CHANGELOG.md](CHANGELOG.md)。

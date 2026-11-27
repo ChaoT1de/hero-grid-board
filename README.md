@@ -5,7 +5,7 @@
 > 按一下 `Ctrl+Alt+A` 框一块屏，图片直接落进对应格子的排行榜 / 评价表小工具。
 > Windows 独立窗口（WebView2 内核），不联网，Excel 式多表，整列渐变配色，一键导出 PNG。
 
-[![build](https://github.com/OWNER/REPO/actions/workflows/build.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/build.yml)
+[![build](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml/badge.svg)](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml)
 ![platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6)
 ![license](https://img.shields.io/badge/license-MIT-green)
 

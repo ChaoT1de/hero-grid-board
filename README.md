@@ -6,7 +6,6 @@
 
 [![build](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml/badge.svg)](https://github.com/ChaoT1de/hero-grid-board/actions/workflows/build.yml)
 ![license](https://img.shields.io/badge/license-MIT-green)
-![大肥鱼](docs/dafiyu.png)
 
 <!-- 录好演示后取消注释，把 docs/demo.gif 一起提交
 ![demo](docs/demo.gif)
